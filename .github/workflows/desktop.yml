@@ -95,10 +95,7 @@ jobs:
           esac
           cd "$rt"
           export POINTREMOTE_DATA_DIR="$RUNNER_TEMP/diag-data"
-          echo "--- without the stdin watchdog"
           timeout 40 "$py" -m pointremote.serve || echo "exit $?"
-          echo "--- with the stdin watchdog, stdin held open"
-          sleep 40 | POINTREMOTE_WATCH_STDIN=1 timeout 35 "$py" -m pointremote.serve || echo "exit $?"
 
       - name: Package
         run: |

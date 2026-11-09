@@ -29,6 +29,7 @@ class ServerProcess:
             "POINTREMOTE_DATA_DIR": str(self.cfg.data_dir),
             "POINTREMOTE_PORT": str(self.cfg.port),
             "POINTREMOTE_WATCH_STDIN": "1",
+            "POINTREMOTE_PARENT_PID": str(os.getpid()),
             "POINTREMOTE_INSTANCE": self.instance,
             "PYTHONUNBUFFERED": "1",
         }
@@ -95,7 +96,9 @@ class ServerProcess:
             return
         try:
             if self.proc.stdin:
-                self.proc.stdin.close()  # the server's watchdog exits on this
+                self.proc.stdin.close()  # the server's watchdog exits on this (not on Windows)
+            if os.name == "nt":
+                self.proc.terminate()
             self.proc.wait(timeout=5)
         except (subprocess.TimeoutExpired, OSError):
             self.proc.terminate()
