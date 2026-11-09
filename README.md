@@ -62,14 +62,14 @@ Download the app for your computer from the [latest release](https://github.com/
 | --- | --- | --- |
 | Windows 10/11 | `PointRemote-Windows.zip` | Built and start-up tested automatically; not yet tried by a person |
 | macOS (Apple Silicon) | `PointRemote-macOS.zip` | Built and start-up tested automatically; not yet tried by a person |
-| Linux (x86-64) | `PointRemote-Linux.tar.gz` | Used daily by the author |
+| Linux (x86-64) | `PointRemote-Linux.AppImage` | Used daily by the author |
 
-Unzip it and double-click **PointRemote**. A small window opens and starts the server; closing the window stops it.
+On Windows and macOS, unzip it and double-click **PointRemote**. On Linux, double-click the AppImage. A small window opens and starts the server; closing the window stops it.
 
 - **First launch** downloads Python, PyTorch and the rest (about 3 GB), so give it a while. Later launches take seconds.
 - **Windows** may say "Windows protected your PC" because the app isn't code-signed: click **More info**, then **Run anyway**. When it asks about network access, allow **Private networks**.
 - **macOS** may refuse to open an app from an unidentified developer the first time: right-click the app, choose **Open**, then **Open** again.
-- **Linux** adds PointRemote to your app menu on first launch. If you run a firewall, open port 8765 to your home network.
+- **Linux:** the first time, your file manager may ask whether to run the AppImage, or you may need to tick *Allow executing file as program* in its Properties. It adds PointRemote to your app menu on first launch. If you run a firewall, open port 8765 to your home network.
 
 The window has a **guide** button that walks through everything below, with troubleshooting.
 

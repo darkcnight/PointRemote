@@ -59,10 +59,18 @@ jobs:
           export UV_BIN="$(python -c 'import uv; print(uv.find_uv_bin())')"
           pyinstaller --noconfirm packaging/pointremote.spec
 
+      - name: Build the AppImage (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          curl -sSLfo "$RUNNER_TEMP/appimagetool" \
+            https://github.com/AppImage/appimagetool/releases/download/1.9.1/appimagetool-x86_64.AppImage
+          echo "ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0  $RUNNER_TEMP/appimagetool" | sha256sum -c -
+          chmod +x "$RUNNER_TEMP/appimagetool"
+          APPIMAGE_EXTRACT_AND_RUN=1 packaging/build_appimage.sh dist "$RUNNER_TEMP/appimagetool" PointRemote-Linux.AppImage
       - name: Self-test (Linux)
         if: runner.os == 'Linux'
         run: |
-          dist/PointRemote/PointRemote --self-test
+          APPIMAGE_EXTRACT_AND_RUN=1 ./PointRemote-Linux.AppImage --self-test
       - name: Self-test (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -101,7 +109,7 @@ jobs:
         run: |
           cd dist
           case "${{ runner.os }}" in
-            Linux)   tar czf ../PointRemote-Linux.tar.gz PointRemote ;;
+            Linux)   ;;  # the AppImage is already built
             macOS)   ditto -c -k --keepParent PointRemote.app ../PointRemote-macOS.zip ;;
             Windows) 7z a -tzip ../PointRemote-Windows.zip PointRemote > /dev/null ;;
           esac

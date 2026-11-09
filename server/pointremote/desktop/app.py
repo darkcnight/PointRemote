@@ -119,7 +119,7 @@ class Window:
         self.tk, self.cfg = tk, cfg
         self.server: ServerProcess | None = None
         self.events: queue.Queue[Event] = queue.Queue()
-        self.root = root = tk.Tk()
+        self.root = root = tk.Tk(className="PointRemote")
         root.title("PointRemote")
         root.configure(bg=BG)
         root.minsize(420, 680)

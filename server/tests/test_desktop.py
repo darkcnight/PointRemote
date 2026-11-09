@@ -69,3 +69,24 @@ def test_settings_file_is_private(tmp_path):
 def test_instance_endpoint_identifies_the_server(client, monkeypatch):
     monkeypatch.setenv("POINTREMOTE_INSTANCE", "abc123")
     assert client.get("/instance").json() == {"instance": "abc123"}
+
+
+def test_menu_entry_points_at_the_appimage(tmp_path, monkeypatch):
+    from pointremote.desktop import linux_menu
+
+    monkeypatch.setenv("APPIMAGE", "/home/me/Apps/PointRemote-x86_64.AppImage")
+    monkeypatch.setattr(linux_menu, "data_dir", lambda: tmp_path / "data")
+    linux_menu.ensure_menu_entry(tmp_path / "apps")
+    text = (tmp_path / "apps" / "pointremote.desktop").read_text()
+    assert 'Exec="/home/me/Apps/PointRemote-x86_64.AppImage"' in text and linux_menu.MARKER in text
+
+
+def test_menu_entry_leaves_a_hand_made_one_alone(tmp_path, monkeypatch):
+    from pointremote.desktop import linux_menu
+
+    apps = tmp_path / "apps"
+    apps.mkdir()
+    (apps / "pointremote.desktop").write_text("[Desktop Entry]\nExec=uv run pointremote-app\n")
+    monkeypatch.setattr(linux_menu, "data_dir", lambda: tmp_path / "data")
+    linux_menu.ensure_menu_entry(apps)
+    assert "uv run" in (apps / "pointremote.desktop").read_text()
