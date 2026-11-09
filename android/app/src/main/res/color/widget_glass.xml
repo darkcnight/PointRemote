@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Smoky glass fill before Android 12 (no wallpaper colours available). -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:alpha="0.55" android:color="#16161A" />
+</selector>
