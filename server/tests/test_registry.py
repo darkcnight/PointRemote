@@ -37,3 +37,16 @@ def test_staging_dir_is_fresh(tmp_path):
     r = ModelRegistry(tmp_path)
     (r.staging_dir(1) / "leftover").write_text("x")
     assert list(r.staging_dir(1).iterdir()) == []
+
+
+def test_reads_latest_symlink_from_older_installs(tmp_path):
+    import os
+    import pytest
+
+    r = ModelRegistry(tmp_path)
+    (tmp_path / "models" / "v1").mkdir(parents=True)
+    try:
+        os.symlink("v1", tmp_path / "models" / "latest")
+    except OSError:
+        pytest.skip("can't create symlinks here")
+    assert r.latest_dir().name == "v1"

@@ -31,15 +31,18 @@ class ModelRegistry:
     def publish(self, version: int, staging: Path) -> Path:
         final = self.root / f"v{version}"
         staging.rename(final)
-        tmp = self.root / "latest.tmp"
-        if tmp.is_symlink() or tmp.exists():
-            tmp.unlink()
-        tmp.symlink_to(final.name)
-        os.replace(tmp, self.root / "latest")
+        # A pointer file rather than a symlink: Windows can't atomically replace a directory link.
+        tmp = self.root / "LATEST.tmp"
+        tmp.write_text(final.name)
+        os.replace(tmp, self.root / "LATEST")
         return final
 
     def latest_dir(self) -> Path | None:
-        link = self.root / "latest"
+        pointer = self.root / "LATEST"
+        if pointer.is_file():
+            d = self.root / pointer.read_text().strip()
+            return d if d.is_dir() else None
+        link = self.root / "latest"  # older installs used a symlink
         return link.resolve() if link.exists() else None
 
     def latest_meta(self) -> dict | None:

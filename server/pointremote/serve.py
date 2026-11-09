@@ -16,6 +16,7 @@ def _exit_when_stdin_closes() -> None:
 
 
 def main() -> None:
+    print(f"PointRemote server starting (Python {sys.version.split()[0]})", flush=True)
     import uvicorn
 
     if os.environ.get("POINTREMOTE_WATCH_STDIN") == "1":

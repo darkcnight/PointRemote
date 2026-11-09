@@ -47,7 +47,9 @@ def boot(cfg: AppConfig, emit) -> ServerProcess | None:
     server = ServerProcess(python, workdir, cfg, data_dir() / "logs" / "server.log")
     server.start()
     if not server.wait_ready():
-        emit(Event("error", "The server didn't start.\n\n" + server.log_tail()))
+        code = server.proc.poll() if server.proc else None
+        detail = f"It exited with code {code}." if code is not None else "It didn't answer within two minutes."
+        emit(Event("error", f"The server didn't start. {detail}\n\n" + server.log_tail(40)))
         server.stop()
         return None
     emit(Event("ready"))
