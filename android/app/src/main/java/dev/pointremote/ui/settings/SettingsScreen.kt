@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -16,6 +17,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +35,8 @@ import dev.pointremote.net.HaClient
 import dev.pointremote.net.HaException
 import dev.pointremote.net.ServerClient
 import dev.pointremote.net.ServerException
+import dev.pointremote.setup.ScanSetupDialog
+import dev.pointremote.setup.ServerSetup
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
@@ -76,6 +80,48 @@ fun SettingsScreen(container: AppContainer) {
         }
 
         Text("PC training server", style = MaterialTheme.typography.titleMedium)
+        var scanning by remember { mutableStateOf(false) }
+        var scanned by remember { mutableStateOf<ServerSetup?>(null) }
+        Button(onClick = { scanning = true }, modifier = Modifier.fillMaxWidth()) { Text("Scan QR from PC") }
+        if (scanning) {
+            ScanSetupDialog(onScanned = { scanning = false; scanned = it }, onDismiss = { scanning = false })
+        }
+        scanned?.let { setup ->
+            AlertDialog(
+                onDismissRequest = { scanned = null },
+                title = { Text("Use this PC?") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(setup.url, style = MaterialTheme.typography.titleMedium)
+                        if (!setup.isHomeNetwork) {
+                            Text(
+                                "This isn't a home-network address. Only continue if you know this is your PC.",
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        scanned = null
+                        draft = draft.copy(serverUrl = setup.url, serverKey = setup.key)
+                        container.settings.save(draft)
+                        serverResult = "Testing…"
+                        scope.launch {
+                            serverResult = try {
+                                val health = ServerClient(setup.url, setup.key, container.http).health()
+                                "Connected: " + (health.latestVersion?.let { "model v$it" } ?: "no model yet")
+                            } catch (e: ServerException) {
+                                "Saved, but can't reach the PC: ${e.message}"
+                            } catch (e: IllegalArgumentException) {
+                                "Invalid URL"
+                            }
+                        }
+                    }) { Text("Use it") }
+                },
+                dismissButton = { TextButton(onClick = { scanned = null }) { Text("Cancel") } },
+            )
+        }
         OutlinedTextField(
             value = draft.serverUrl, onValueChange = { draft = draft.copy(serverUrl = it) },
             label = { Text("URL, e.g. http://192.168.1.20:8765") }, singleLine = true,

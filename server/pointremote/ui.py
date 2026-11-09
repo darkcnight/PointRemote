@@ -10,6 +10,7 @@ from .config import Settings
 from .labels import LabelNotFound, LabelStore
 from .photos import PhotoNotFound, PhotoStore
 from .registry import ModelRegistry
+from .tickets import LoginTickets
 
 _STYLE = (
     "body{font-family:system-ui,sans-serif;max-width:960px;margin:2rem auto;padding:0 1rem}"
@@ -53,7 +54,11 @@ def _history_row(meta: dict) -> str:
     )
 
 
-def build_ui_router(settings: Settings, labels: LabelStore, photos: PhotoStore, registry: ModelRegistry) -> APIRouter:
+def build_ui_router(
+    settings: Settings, labels: LabelStore, photos: PhotoStore, registry: ModelRegistry,
+    tickets: LoginTickets | None = None,
+) -> APIRouter:
+    tickets = tickets or LoginTickets()
     router = APIRouter(prefix="/ui")
 
     def authed(request: Request) -> bool:
@@ -72,6 +77,14 @@ def build_ui_router(settings: Settings, labels: LabelStore, photos: PhotoStore, 
             return _page("Log in", "<p>Wrong key.</p>" + _LOGIN_FORM, status=401)
         resp = RedirectResponse("/ui", status_code=303)
         resp.set_cookie(COOKIE_NAME, key, httponly=True, samesite="strict")
+        return resp
+
+    @router.get("/ticket/{ticket}")
+    def login_with_ticket(ticket: str) -> Response:
+        if not tickets.redeem(ticket):
+            return _page("Log in", "<p>That link has expired.</p>" + _LOGIN_FORM, status=401)
+        resp = RedirectResponse("/ui", status_code=303)
+        resp.set_cookie(COOKIE_NAME, settings.api_key, httponly=True, samesite="lax")
         return resp
 
     @router.get("")

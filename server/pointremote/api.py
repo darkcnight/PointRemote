@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, Response, UploadFile
+import os
+import time
+from ipaddress import ip_address
+
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
@@ -14,6 +18,7 @@ from .photos import InvalidImage, PhotoStore
 from .pipeline import run_training, training_blockers
 from .progress import ProgressFn
 from .registry import ModelRegistry
+from .tickets import LoginTickets
 from .ui import build_ui_router
 
 
@@ -33,6 +38,16 @@ def create_app(settings: Settings, train_fn: Callable[[ProgressFn], dict] | None
 
     app = FastAPI(title="PointRemote training server")
     app.state.runner = runner
+    tickets = LoginTickets()
+    last_phone: dict[str, float] = {}
+
+    @app.middleware("http")
+    async def note_phone(request: Request, call_next):
+        response = await call_next(request)
+        # Anything not from this PC is the phone; the desktop app shows when it last called.
+        if request.client and response.status_code != 401 and not _is_local(request.client.host):
+            last_phone["at"] = time.monotonic()
+        return response
     api = APIRouter(dependencies=[Depends(make_key_checker(settings.api_key))])
 
     def label_json(label: Label) -> dict:
@@ -52,7 +67,17 @@ def create_app(settings: Settings, train_fn: Callable[[ProgressFn], dict] | None
     @api.get("/health")
     def health() -> dict:
         meta = registry.latest_meta()
-        return {"ok": True, "training": runner.running, "latest_version": meta["version"] if meta else None}
+        seen = last_phone.get("at")
+        return {
+            "ok": True,
+            "training": runner.running,
+            "latest_version": meta["version"] if meta else None,
+            "phone_last_seen": None if seen is None else round(time.monotonic() - seen),
+        }
+
+    @api.post("/ui-ticket")
+    def ui_ticket() -> dict:
+        return {"ticket": tickets.issue()}
 
     @api.get("/labels")
     def list_labels() -> list[dict]:
@@ -119,6 +144,19 @@ def create_app(settings: Settings, train_fn: Callable[[ProgressFn], dict] | None
             raise HTTPException(status_code=404, detail="no model trained yet")
         return FileResponse(d / "model.onnx", media_type="application/octet-stream", filename="model.onnx")
 
+    @app.get("/instance")
+    def instance() -> dict:
+        # Not secret: lets the desktop app check it's talking to the server it started
+        # (and not something else on the port) before it sends the API key.
+        return {"instance": os.environ.get("POINTREMOTE_INSTANCE", "")}
+
     app.include_router(api)
-    app.include_router(build_ui_router(settings, labels, photos, registry))
+    app.include_router(build_ui_router(settings, labels, photos, registry, tickets))
     return app
+
+
+def _is_local(host: str) -> bool:
+    try:
+        return ip_address(host).is_loopback
+    except ValueError:
+        return host in ("testclient", "localhost")

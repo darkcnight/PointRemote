@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PointRemote guide</title>
+<style>
+:root{--bg:#f6f5f0;--card:#fff;--text:#1d1e20;--muted:#64645f;--line:#e3e1d8;--accent:#3f6b1c;--accent-bg:#e8f1dc;--warn-bg:#fbf0dc;--code:#f0efe8}
+@media (prefers-color-scheme:dark){:root{--bg:#141518;--card:#1f2125;--text:#ecebe6;--muted:#a3a39c;--line:#2e3035;--accent:#c0dd97;--accent-bg:#26331c;--warn-bg:#3a2f1c;--code:#2a2c31}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:760px;margin:0 auto;padding:40px 20px 80px}
+h1{font-size:2rem;margin:0 0 .25rem;letter-spacing:-.01em}
+.lede{color:var(--muted);margin:0 0 2rem;font-size:1.05rem}
+nav{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin-bottom:28px}
+nav ol{margin:0;padding-left:1.3rem;columns:2;column-gap:2rem}
+nav a{color:var(--text)}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px 22px 18px;margin-bottom:18px}
+h2{font-size:1.2rem;display:flex;align-items:center;gap:.6rem;margin:16px 0 6px}
+.n{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:.9rem;font-weight:700;flex:none}
+code{background:var(--code);border-radius:6px;padding:.1em .4em;font-size:.92em}
+pre{background:var(--code);border-radius:10px;padding:12px 14px;overflow-x:auto}
+.tip{background:var(--accent-bg);border-radius:10px;padding:10px 14px;margin:12px 0}
+.warn{background:var(--warn-bg);border-radius:10px;padding:10px 14px;margin:12px 0}
+a{color:var(--accent)}
+li{margin:.25rem 0}
+@media (max-width:560px){nav ol{columns:1}}
+</style>
+</head>
+<body>
+<main>
+<h1>PointRemote guide</h1>
+<p class="lede">Point your phone at a light or air conditioner and it switches. This guide gets you from nothing to your first switch in about half an hour, most of it spent taking photos.</p>
+
+<nav><ol>
+<li><a href="#app">Install the phone app</a></li>
+<li><a href="#firewall">Let the phone reach this PC</a></li>
+<li><a href="#pair">Connect the phone</a></li>
+<li><a href="#ha">Connect Home Assistant</a></li>
+<li><a href="#capture">Photograph your devices</a></li>
+<li><a href="#train">Train</a></li>
+<li><a href="#point">Point and switch</a></li>
+<li><a href="#widget">Add the widget</a></li>
+<li><a href="#trouble">If something doesn't work</a></li>
+</ol></nav>
+
+<section id="app">
+<h2><span class="n">1</span>Install the phone app</h2>
+<p>On your Android phone (Android 10 or newer), open the <a href="https://github.com/darkcnight/PointRemote/releases/latest">latest release</a> and download <code>PointRemote.apk</code>. Open it from your downloads.</p>
+<p>Android will ask whether to allow installing apps from your browser. Allow it for this install. You can switch it off again afterwards.</p>
+</section>
+
+<section id="firewall">
+<h2><span class="n">2</span>Let the phone reach this PC</h2>
+<p>The phone and the PC must be on the same Wi-Fi or home network.</p>
+<ul>
+<li><b>Windows:</b> the first time the server starts, Windows asks whether to allow it on networks. Tick <b>Private networks</b> and click <b>Allow</b>.</li>
+<li><b>Mac:</b> if macOS asks whether to accept incoming connections, click <b>Allow</b>.</li>
+<li><b>Linux:</b> if you use a firewall, open port 8765 for your home network, for example with ufw:
+<pre>sudo ufw allow from 192.168.0.0/16 to any port 8765 proto tcp</pre></li>
+</ul>
+<p>Check from the phone: open the address shown in the PointRemote window (like <code>http://192.168.1.20:8765/ui</code>) in the phone's browser. If a login page appears, you're set.</p>
+</section>
+
+<section id="pair">
+<h2><span class="n">3</span>Connect the phone</h2>
+<p>In the app, open <b>Settings</b>, then under <b>PC training server</b> tap <b>Scan QR from PC</b>, and point the camera at the QR code in the PointRemote window. The address and access key fill in by themselves. Tap <b>Test</b> to check.</p>
+<p>The window's "Phone last connected" line turns green once the phone has talked to the PC.</p>
+<div class="tip">The QR code contains your access key. Don't post a screenshot of it.</div>
+</section>
+
+<section id="ha">
+<h2><span class="n">4</span>Connect Home Assistant</h2>
+<ol>
+<li>In Home Assistant, click your name at the bottom left, open the <b>Security</b> tab, and under <b>Long-lived access tokens</b> click <b>Create token</b>. Name it PointRemote and copy it.</li>
+<li>In the app's <b>Settings</b>, under <b>Home Assistant</b>, enter your Home Assistant address (like <code>http://192.168.1.10:8123</code>) and paste the token.</li>
+<li>Tap <b>Test</b>. It should say how many devices it found.</li>
+</ol>
+<p>Getting the token to your phone is easiest by creating it in Home Assistant's own app or web page on the phone.</p>
+</section>
+
+<section id="capture">
+<h2><span class="n">5</span>Photograph your devices</h2>
+<p>Open <b>Capture</b>. It asks what you're photographing every time, so photos never land in the wrong place.</p>
+<ol>
+<li>Tap <b>+ Add a device from Home Assistant</b> and pick a light, fan, switch or air conditioner. Search helps if the list is long.</li>
+<li>Hold the round shutter button and walk slowly around the device. It takes about three photos a second. Aim for <b>about 100 photos</b>: near and far, from the sides, with the light on and off, by day and at night.</li>
+<li>Now pick <b>Unknown</b> and photograph everything that <i>isn't</i> a device: walls, ceiling, furniture, the floor, other rooms. Take at least as many as for your devices. This is what stops the app from switching things when you're just waving the phone around.</li>
+</ol>
+<div class="tip">Start with two or three devices. Add more later, a few at a time.</div>
+</section>
+
+<section id="train">
+<h2><span class="n">6</span>Train</h2>
+<p>Open <b>Train</b> and tap <b>Train</b>. The PC learns your devices from the photos. With an NVIDIA graphics card that takes a few minutes; without one, expect ten to thirty.</p>
+<p>When it finishes, the screen shows how accurate it is overall and per device, and which devices it mixes up. The phone downloads the new model by itself.</p>
+<p>You can also look at your photos and delete bad ones from the PC: click <b>Photos and training</b> in the PointRemote window.</p>
+</section>
+
+<section id="point">
+<h2><span class="n">7</span>Point and switch</h2>
+<p>Open <b>Point</b> and aim at a device. Once it's sure (several frames in a row agree), the name locks in. Tap to switch it.</p>
+</section>
+
+<section id="widget">
+<h2><span class="n">8</span>Add the widget</h2>
+<p>Long-press your home screen, choose <b>Widgets</b>, and add <b>PointRemote</b>. Tapping it opens a bare camera that switches the first device it recognises, then closes. There's also a Quick Settings tile.</p>
+<p>If you'd rather confirm every switch, turn off <b>Switch without tapping</b> in Settings.</p>
+</section>
+
+<section id="trouble">
+<h2><span class="n">9</span>If something doesn't work</h2>
+<ul>
+<li><b>Phone can't reach the PC.</b> Check that both are on the same network, and turn off any VPN on the phone; VPNs send the traffic elsewhere. Then check the firewall step again.</li>
+<li><b>It mixes up two devices.</b> Take more photos of both from the angles where they look alike, then train again.</li>
+<li><b>It reacts to things that aren't devices.</b> Take more Unknown photos of those things, then train again.</li>
+<li><b>It doesn't recognise a device you just added.</b> Train again. The model only knows the photos it was trained on.</li>
+<li><b>The server window shows an error.</b> Click <b>Try again</b>. If it keeps failing, the details are in the log file in the PointRemote data folder (<code>logs/server.log</code>).</li>
+</ul>
+<div class="warn">PointRemote talks over plain HTTP and is meant for your home network only. Don't open port 8765 to the internet.</div>
+</section>
+</main>
+</body>
+</html>

@@ -99,7 +99,11 @@ def top_confusions(confusion: list[list[int]], classes: list[Label], limit: int 
 
 def _device(name: str) -> torch.device:
     if name == "auto":
-        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if torch.cuda.is_available():
+            return torch.device("cuda")
+        if torch.backends.mps.is_available():  # Apple GPU
+            return torch.device("mps")
+        return torch.device("cpu")
     return torch.device(name)
 
 
@@ -151,12 +155,13 @@ def _set_backbone_trainable(model: nn.Module, trainable: bool) -> None:
 
 def export_onnx(model: nn.Module, path: Path) -> None:
     dummy = torch.randn(1, 3, INPUT_SIZE, INPUT_SIZE)
-    torch.onnx.export(
-        model, dummy, str(path),
-        input_names=["input"], output_names=["logits"],
-        dynamic_axes={"input": {0: "batch"}, "logits": {0: "batch"}},
-        opset_version=17, dynamo=False,
+    batch = torch.export.Dim("batch", min=1)
+    program = torch.onnx.export(
+        model, (dummy,), input_names=["input"], output_names=["logits"],
+        dynamic_shapes=({0: batch},), opset_version=18, dynamo=True,
+        external_data=False, verbose=False,
     )
+    program.save(str(path), external_data=False)
 
 
 def _sha256(path: Path) -> str:

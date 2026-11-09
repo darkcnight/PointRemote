@@ -22,7 +22,7 @@ def test_requires_key(client):
 
 
 def test_health(client):
-    assert client.get("/health", headers=AUTH).json() == {"ok": True, "training": False, "latest_version": None}
+    assert client.get("/health", headers=AUTH).json() == {"ok": True, "training": False, "latest_version": None, "phone_last_seen": None}
 
 
 def test_labels_crud(client):

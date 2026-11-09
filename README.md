@@ -50,33 +50,37 @@ If you'd rather confirm each switch, turn off **Switch without tapping** in Sett
 
 - **An Android phone**, Android 10 or newer.
 - **Home Assistant**, reachable from the phone, and a [long-lived access token](https://www.home-assistant.io/docs/authentication/#your-account-profile).
-- **A PC** for training, with Python 3.12 and [uv](https://docs.astral.sh/uv/). An NVIDIA GPU makes training take minutes instead of tens of minutes. The server's `pyproject.toml` pulls CUDA 12.8 builds of PyTorch; change the `pytorch-cu128` index if you need a different CUDA or CPU-only build.
-- **To build the app:** JDK 21 and the Android SDK (Gradle downloads the rest).
+- **A PC** on the same network, with about 7 GB of free disk space. An NVIDIA graphics card makes training take minutes instead of tens of minutes; Apple Silicon Macs use their GPU too.
 
 ## Setup
 
-### 1. Training server (PC)
+### 1. The PC app
 
-```bash
-cd server
-uv sync
-echo "POINTREMOTE_API_KEY=$(python3 -c 'import secrets; print(secrets.token_urlsafe(24))')" > .env
-./run.sh
-```
+Download the app for your computer from the [latest release](https://github.com/darkcnight/PointRemote/releases/latest):
 
-It listens on port 8765. Check `http://<pc-ip>:8765/ui` loads from your phone's browser; if not, your PC's firewall is probably blocking the port. There's also a small web page there for browsing photos and training history. More detail is in [server/README.md](server/README.md).
+| System | Download | Status |
+| --- | --- | --- |
+| Windows 10/11 | `PointRemote-Windows.zip` | Built and start-up tested automatically; not yet tried by a person |
+| macOS (Apple Silicon) | `PointRemote-macOS.zip` | Built and start-up tested automatically; not yet tried by a person |
+| Linux (x86-64) | `PointRemote-Linux.tar.gz` | Used daily by the author |
 
-### 2. App
+Unzip it and double-click **PointRemote**. A small window opens and starts the server; closing the window stops it.
 
-```bash
-cd android
-./gradlew assembleDebug
-```
+- **First launch** downloads Python, PyTorch and the rest (about 3 GB), so give it a while. Later launches take seconds.
+- **Windows** may say "Windows protected your PC" because the app isn't code-signed: click **More info**, then **Run anyway**. When it asks about network access, allow **Private networks**.
+- **macOS** may refuse to open an app from an unidentified developer the first time: right-click the app, choose **Open**, then **Open** again.
+- **Linux** adds PointRemote to your app menu on first launch. If you run a firewall, open port 8765 to your home network.
 
-Install `android/app/build/outputs/apk/debug/app-debug.apk` on your phone, then in **Settings** enter:
+The window has a **guide** button that walks through everything below, with troubleshooting.
 
-- your Home Assistant URL and token,
-- the server URL (`http://<pc-ip>:8765`) and the API key from `server/.env`.
+<p align="center"><img src="docs/images/desktop.png" alt="The PointRemote PC window: running, with a QR code to connect the phone, the server address and a hidden key" width="420"></p>
+
+### 2. The phone app
+
+Download `PointRemote.apk` from the same release and install it on your phone. Then in the app's **Settings**:
+
+- tap **Scan QR from PC** and point the camera at the QR code in the PC window; the server address and key fill in by themselves,
+- enter your Home Assistant URL and token.
 
 Both have a **Test** button.
 
@@ -99,9 +103,29 @@ Supported device types: lights, switches, fans, covers, media players, input boo
 
 | Path | What's there |
 | --- | --- |
-| `server/` | FastAPI training server: photo store, training (PyTorch, MobileNetV3), ONNX export with an accuracy check, versioned model registry, small web UI |
+| `server/` | FastAPI training server: photo store, training (PyTorch, MobileNetV3), ONNX export with an accuracy check, versioned model registry, small web UI. `server/pointremote/desktop/` is the PC window and its guide; `server/packaging/` builds it. |
 | `android/` | Kotlin + Jetpack Compose app: CameraX capture, ONNX Runtime inference, lock tracking, Home Assistant client, widget (Glance) and Quick Settings tile |
 | `docs/` | Design spec, implementation plans and the README images |
+
+## Running from source
+
+Needs Python 3.12 and [uv](https://docs.astral.sh/uv/).
+
+```bash
+cd server
+uv sync
+echo "POINTREMOTE_API_KEY=$(python3 -c 'import secrets; print(secrets.token_urlsafe(24))')" > .env
+uv run pointremote-app      # the PC window; or ./run.sh for just the server in a terminal
+```
+
+The server's `pyproject.toml` pulls CUDA 12.8 builds of PyTorch on Windows and Linux; change the `pytorch-cu128` index if you need a different CUDA or CPU-only build.
+
+To build the phone app you need JDK 21 and the Android SDK:
+
+```bash
+cd android
+./gradlew assembleDebug
+```
 
 ## Tests
 
@@ -114,6 +138,8 @@ cd android && ./gradlew testDebugUnitTest
 ```
 
 The server suite includes a real training run on the GPU when one is available.
+
+[GitHub Actions](.github/workflows/desktop.yml) runs the server tests on Windows, macOS and Linux, builds the PC app for each, and starts each built app in a test mode that installs its server, checks it answers, and stops it. That doesn't cover the window itself or GPU training on Windows and macOS.
 
 ## License
 
