@@ -36,5 +36,5 @@ coll = COLLECT(exe, a.binaries, a.datas, name="PointRemote")
 if sys.platform == "darwin":
     app = BUNDLE(
         coll, name="PointRemote.app", icon=icon, bundle_identifier="dev.pointremote.desktop",
-        info_plist={"NSHighResolutionCapable": True, "CFBundleShortVersionString": "0.2.0"},
+        info_plist={"NSHighResolutionCapable": True, "CFBundleShortVersionString": "0.2.1"},
     )

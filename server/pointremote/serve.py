@@ -8,12 +8,27 @@ import sys
 import threading
 
 
-def _exit_when_stdin_closes() -> None:
+def _exit_when_stdin_closes(fd: int) -> None:
     try:
-        while sys.stdin.buffer.read(1024):
+        while os.read(fd, 1024):
             pass
     finally:
         os._exit(0)
+
+
+def start_stdin_watchdog() -> None:
+    """Exit when the desktop app's pipe on stdin closes.
+
+    Reads a duplicate of the raw descriptor and points sys.stdin at /dev/null. A thread
+    blocked in sys.stdin.read() holds sys.stdin's lock, and every process forked from here
+    (PyTorch's data-loader workers) inherits that lock held and hangs when multiprocessing
+    closes stdin at startup."""
+    fd = os.dup(0)
+    devnull = os.open(os.devnull, os.O_RDONLY)
+    os.dup2(devnull, 0)
+    os.close(devnull)
+    sys.stdin = open(os.devnull)
+    threading.Thread(target=_exit_when_stdin_closes, args=(fd,), daemon=True).start()
 
 
 def _exit_when_process_exits(pid: int) -> None:
@@ -39,7 +54,7 @@ def main() -> None:
     if os.name == "nt" and parent:
         threading.Thread(target=_exit_when_process_exits, args=(int(parent),), daemon=True).start()
     elif os.environ.get("POINTREMOTE_WATCH_STDIN") == "1":
-        threading.Thread(target=_exit_when_stdin_closes, daemon=True).start()
+        start_stdin_watchdog()
     port = int(os.environ.get("POINTREMOTE_PORT", "8765"))
     uvicorn.run("pointremote.main:app", host="0.0.0.0", port=port, log_level="info")
 
