@@ -1,4 +1,7 @@
 import json
+import sys
+
+import pytest
 from urllib.parse import parse_qs, urlparse
 
 from pointremote.desktop.app import ago
@@ -71,6 +74,7 @@ def test_instance_endpoint_identifies_the_server(client, monkeypatch):
     assert client.get("/instance").json() == {"instance": "abc123"}
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Linux app menu only")
 def test_menu_entry_points_at_the_appimage(tmp_path, monkeypatch):
     from pointremote.desktop import linux_menu
 
@@ -81,6 +85,7 @@ def test_menu_entry_points_at_the_appimage(tmp_path, monkeypatch):
     assert 'Exec="/home/me/Apps/PointRemote-x86_64.AppImage"' in text and linux_menu.MARKER in text
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Linux app menu only")
 def test_menu_entry_leaves_a_hand_made_one_alone(tmp_path, monkeypatch):
     from pointremote.desktop import linux_menu
 
